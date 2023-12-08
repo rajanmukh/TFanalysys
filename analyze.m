@@ -2,6 +2,7 @@
 if ~exist('initialized','var')
     addpath([pwd,'\sgp4']);
     initializeRecord();
+    readrinex('IISC00IND_R_20233380000_01D_EN.rnx');
     initialized = true;
 end
 fileID=fopen('beacondata_LE_2023_12_04.txt');
@@ -115,16 +116,6 @@ ts(ix)=[];
 tr(ix)=[];
 fr(ix)=[];
 sr(ix)=[];
-function SID=getSID(snm,prnlist)
-if snm(1)=='G'
-    idx=str2double(extractAfter(snm,5));
-elseif snm(1)=='C'
-    idx=str2double(extractAfter(snm,9));
-else
-    idx=2;
-end
-SID=prnlist(idx);
-end
 
 
 

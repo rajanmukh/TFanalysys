@@ -3,13 +3,16 @@ function [TOA,FOA] = TRxOperation(satIDs,ToT,FoT,TxSite,RxSite)
 validChns=find(satIDs);
 satIDs=satIDs(validChns);
 noOfSats=length(validChns);
+svID=satIDs-400;
 t0=split2fields(repmat(ToT,1,noOfSats));
 f_list=[1544.1e6,1544.9e6,1544.21e6];
 %uplink
-t1=addSeconds(t0,0.16);
-[posS,velS,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
-t2=addSeconds(t0,0.08);
-[posS1,velS1,~]=actualtof(t2,satIDs,TxSite,'uplink');%for doppler calculation
+[posS,velS,dt1]=getPreciseSatPosVel_r(repmat(ToT+0.16/86400,1,noOfSats),svID,TxSite,'uplink');
+% t1=addSeconds(t0,0.16);
+% [posS,velS,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
+[posS1,velS1,~]=getPreciseSatPosVel_r(repmat(ToT+0.08/86400,1,noOfSats),svID,TxSite,'uplink');
+% t2=addSeconds(t0,0.08);
+% [posS1,velS1,~]=actualtof(t2,satIDs,TxSite,'uplink');%for doppler calculation
 fd1=getDoppler(posS1,velS1,TxSite,FoT);
 %downlink
 dt2=tof(posS,RxSite);
@@ -17,8 +20,7 @@ cflag=floor(satIDs/100)-3;
 freq_trns=f_list(cflag) - 406.05e6;
 fc1=FoT+fd1+freq_trns;
 fd2 = getDoppler(posS1,velS1,RxSite,fc1);
-%total with noise added
-TOA=ToT+(dt1+dt2+20e-6*randn(1,noOfSats))/86400;
+TOA=ToT+(dt1+dt2)/86400;
 FOA=fc1+fd2;
 end
 
@@ -33,6 +35,29 @@ for i=1:3
     dt=tof(posS,place);
 end
 end
+
+function[posS,velS,dt]=getPreciseSatPosVel_r(t,svID,place,journey)
+global ephdata;
+noOfSat=length(t);
+posS=zeros(3,noOfSat);
+velS=zeros(3,noOfSat);
+dt=zeros(1,noOfSat);
+for i=1:noOfSat
+    d=ephdata{svID(i)};
+    [~,ind]=min(abs(seconds(datetime(2023,12,4,3,44,0)-d.Time)));
+    for j=1:3
+        if strcmp(journey,'downlink')
+            [posS_t,velS_t]=gnssconstellation(t(i)-dt(i)/86400,RINEXData=d(ind,:));
+        else
+            [posS_t,velS_t]=gnssconstellation(t(i)+dt(i)/86400,RINEXData=d(ind,:));
+        end
+        dt(i)=tof(posS_t.'*1e-3,place);
+    end
+    posS(:,i)=posS_t.'*1e-3;
+    velS(:,i)=velS_t.'*1e-3;
+end
+end
+
 
 function t=split2fields(toa)
 t.d=day(toa,'dayofyear');
@@ -83,20 +108,4 @@ function dt=tof(pos1,pos2)
 global LIGHTSPEED;
 d=sqrt(sum((pos1-pos2).^2));
 dt=d/LIGHTSPEED;
-end
-
-function [a]=getAngles(posS,place)
-dxyz=posS-place;
-r=sqrt(sum(dxyz.^2));
-p=sqrt(sum(place.^2));
-cosa=sum(dxyz.*place)./(r*p);
-a=90-(acos(cosa)*180/pi);
-end
-
-function det=detDecesion(els)
-pTable=[0,80,90,95,100,100,100,100,100,100,100,100,100,100,80,60,30,10]/100;
-els(els<0)=0.1;
-p=pTable(ceil(els/5));
-x=rand(size(els));
-det=x<p;
 end
