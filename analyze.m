@@ -105,7 +105,7 @@ while(1)
     prev_day = present_day;
 end
 fclose(fileID);
-chn=2;
+chn=1;
 valid=~isnat(TOA_m);
 ts=TOA_m(chn,valid(chn,:));
 tr=terr(chn,valid(chn,:));
