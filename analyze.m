@@ -1,8 +1,9 @@
- 
+ global eph_GLO;
 if ~exist('initialized','var')
     addpath([pwd,'\sgp4']);
     initializeRecord();
     readrinex('IISC00IND_R_20233380000_01D_EN.rnx');
+    eph_GLO=read_nav_glo('IISC00IND_R_20233380000_01D_RN.rnx',18);
     initialized = true;
 end
 fileID=fopen('beacondata_LE_2023_12_04.txt');
@@ -92,6 +93,9 @@ while(1)
         sec=10*binaryVectorToDecimal(data(141:144));
         ToT=datetime(2023,12,4,hr,mn,sec);
         cflag=floor(SIDs/100)-3;
+%         if ~any(cflag==2)
+%             continue;
+%         end
         freq_trns=f_list(cflag) - 406.05e6;
         foa_m = foas+53.1311e3+f_list(cflag)-1e5;        
         [toa_e,foa_e] = TRxOperation(SIDs,ToT,FoT,TxSite,RxSite); 
