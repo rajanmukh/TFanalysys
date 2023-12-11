@@ -1,17 +1,17 @@
-function [TOA,FOA] = TRxOperation(satIDs,ToT,FoT,TxSite,RxSite)
+function [TOT,FOA] = TRxOperation1(satIDs,ToA,FoT,TxSite,RxSite)
 
 validChns=find(satIDs);
 satIDs=satIDs(validChns);
 noOfSats=length(validChns);
 svID=satIDs-400; 
 
-t0=split2fields(repmat(ToT,1,noOfSats));
+% t0=split2fields(ToA);
 f_list=[1544.1e6,1544.9e6,1544.21e6];
 %uplink
-[posS,velS,dt1]=getPreciseSatPosVel_r(repmat(ToT+0.16/86400,1,noOfSats),svID,TxSite,'uplink');
-t1=addSeconds(t0,0.16);
-[posSx,velSx,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
-[posS1,velS1,~]=getPreciseSatPosVel_r(repmat(ToT+0.25/86400,1,noOfSats),svID,TxSite,'uplink');
+[posS,velS,dt1]=getPreciseSatPosVel_r(ToA+0.16/86400,svID,TxSite,'downlink');
+% t1=addSeconds(t0,0.16);
+% [posSx,velSx,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
+[posS1,velS1,~]=getPreciseSatPosVel_r(ToA+0.25/86400,svID,TxSite,'downlink');
 % t2=addSeconds(t0,0.08);
 % [posS1,velS1,~]=actualtof(t2,satIDs,TxSite,'uplink');%for doppler calculation
 fd1=getDoppler(posS1,velS1,TxSite,FoT);
@@ -21,13 +21,13 @@ cflag=floor(satIDs/100)-3;
 freq_trns=f_list(cflag) - 406.05e6;
 fc1=FoT+fd1+freq_trns;
 fd2 = getDoppler(posS1,velS1,RxSite,fc1);
-TOA=ToT+(dt1+dt2)/86400;
+TOT=ToA-(dt1+dt2)/86400;
 FOA=fc1+fd2;
 end
 
 function[posS,velS,dt]= actualtof(t,sids,place,journey)
 dt=0;
-for i=1:3
+for i=1:2
     if strcmp(journey,'downlink')
         [posS,velS]=getSatPosVel(addSeconds(t,-dt),sids);
     else
@@ -48,7 +48,7 @@ for i=1:noOfSat
     if svID(i)<100 %gallileo
         d=ephdata{svID(i)};
         [~,ind]=min(abs(seconds(t(i)-d.Time)));
-        for j=1:3
+        for j=1:2
             if strcmp(journey,'downlink')
                 [posS_t,velS_t]=gnssconstellation(t(i)-dt(i)/86400,RINEXData=d(ind,:));
             else

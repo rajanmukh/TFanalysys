@@ -1,4 +1,4 @@
- global eph_GLO;
+global eph_GLO;
 if ~exist('initialized','var')
     addpath([pwd,'\sgp4']);
     initializeRecord();
@@ -14,11 +14,12 @@ present_day=0;
 prev_day=0;
 f_list=[1544.1e6,1544.9e6,1544.21e6];
 RxSite=lla2ecef([13.036,77.5124,930])'*1e-3;%Bangalore
-TxSite=lla2ecef([43.56,1.48,214])'*1e-3;%France
-FoT=406.022e6;
-REFID = '9C6000000000001';
-noB=2880;
+TxSite=lla2ecef([24.431,54.448,5])'*1e-3;%UAE;BRT=50;
+FoT=406.043000e6;
+REFID = '3ADEA2223F81FE0';
+noB=1728;
 TOA_m=repmat(NaT,7,noB);
+TOT_e=repmat(NaT,7,noB);
 terr=zeros(7,noB);
 ferr=zeros(7,noB);
 sats = zeros(7,noB);
@@ -83,23 +84,19 @@ while(1)
     if otherID
         continue;
     end
-    if nos>0
-        %find out max CNR packet
-        [~,ind]=max(CNRs);
-        data = hexToBinaryVector(msgs{ind},144);
-        jday=100*binaryVectorToDecimal(data(113:116))+10*binaryVectorToDecimal(data(117:120))+binaryVectorToDecimal(data(121:124));
-        hr=10*binaryVectorToDecimal(data(125:128))+binaryVectorToDecimal(data(129:132));
-        mn=10*binaryVectorToDecimal(data(133:136))+binaryVectorToDecimal(data(137:140));   
-        sec=10*binaryVectorToDecimal(data(141:144));
-        ToT=datetime(2023,12,4,hr,mn,sec);
+    if nos>0        
         cflag=floor(SIDs/100)-3;
-%         if ~any(cflag==2)
-%             continue;
-%         end
+        if any(SIDs==402)
+            continue;
+        end
         freq_trns=f_list(cflag) - 406.05e6;
-        foa_m = foas+53.1311e3+f_list(cflag)-1e5;        
-        [toa_e,foa_e] = TRxOperation(SIDs,ToT,FoT,TxSite,RxSite); 
-        terr(ants,idx)=seconds(toa_m-toa_e);
+        foa_m = foas+53.1311e3+f_list(cflag)-1e5;  
+        if idx==10
+            dfdf=0;
+        end
+        [tot_e,foa_e] = TRxOperation1(SIDs,toa_m,FoT,TxSite,RxSite); 
+%         terr(ants,idx)=seconds(toa_m-toa_e);
+        TOT_e(ants,idx)=tot_e;
         ferr(ants,idx)=foa_m-foa_e;
         TOA_m(ants,idx)=toa_m;
         sats(ants,idx)=SIDs;
@@ -109,17 +106,21 @@ while(1)
     prev_day = present_day;
 end
 fclose(fileID);
-chn=1;
+chn=3;
 valid=~isnat(TOA_m);
 ts=TOA_m(chn,valid(chn,:));
-tr=terr(chn,valid(chn,:));
+valid12=valid(1,:)&valid(2,:);
+tr=seconds(TOT_e(1,valid12)-TOT_e(2,valid12));
 fr=ferr(chn,valid(chn,:));
 sr=sats(chn,valid(chn,:));
+sel=sr==419;
+fr(sel)=fr(sel)-2.6;
 ix=find(abs(fr+13)>5);
 ts(ix)=[];
 tr(ix)=[];
 fr(ix)=[];
 sr(ix)=[];
+
 
 
 

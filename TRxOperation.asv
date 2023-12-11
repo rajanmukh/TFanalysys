@@ -9,8 +9,8 @@ t0=split2fields(repmat(ToT,1,noOfSats));
 f_list=[1544.1e6,1544.9e6,1544.21e6];
 %uplink
 [posS,velS,dt1]=getPreciseSatPosVel_r(repmat(ToT+0.16/86400,1,noOfSats),svID,TxSite,'uplink');
-t1=addSeconds(t0,0.16);
-[posSx,velSx,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
+% t1=addSeconds(t0,0.16);
+% [posS,velS,dt1]=actualtof(t1,satIDs,TxSite,'uplink');
 [posS1,velS1,~]=getPreciseSatPosVel_r(repmat(ToT+0.25/86400,1,noOfSats),svID,TxSite,'uplink');
 % t2=addSeconds(t0,0.08);
 % [posS1,velS1,~]=actualtof(t2,satIDs,TxSite,'uplink');%for doppler calculation
@@ -60,14 +60,11 @@ for i=1:noOfSat
         velS(:,i)=velS_t.'*1e-3;
     else %glonass
         %get the slot number
-        tlist=[0,9,11,22];
+        tlist=[0,22,11,9];
         slno=tlist(svID(i)-100);
         t_jd=cal2jd_GT(t(i).Year,t(i).Month,t(i).Day+(t(i).Hour*3600+t(i).Minute*60+t(i).Second)/86400);
-        t_jd = t_jd + 18/(60*60*24);
-        [twk,Ttr,rollover]=jd2gps_GT(t_jd);
-        [X,V]=SatPos_brdc_GLO(Ttr,slno+100,eph_GLO);
-        posS(:,i)=X.'*1e-3;
-        velS(:,i)=V.'*1e-3;
+        Ttr=jd2gps_GT(t_jd);
+        [X,V]=SatPos_brdc_GLO(Ttr,slno,eph_GLO);
     end
 end
 end
